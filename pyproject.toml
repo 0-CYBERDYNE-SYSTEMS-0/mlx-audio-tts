@@ -1,0 +1,39 @@
+[project]
+name = "mlx-audio-tts"
+version = "0.1.0"
+description = "MLX-Audio based text-to-speech web application"
+authors = [
+    { name = "MLX Audio TTS" }
+]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.31.1",
+    "python-multipart>=0.0.12",
+    "soundfile>=0.12.1",
+    "aiofiles>=24.1.0",
+    "apscheduler>=3.10.4",
+    "pydantic>=2.9.2",
+    "python-magic>=0.4.27",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "httpx>=0.27.0",
+    "ruff>=0.7.0",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
