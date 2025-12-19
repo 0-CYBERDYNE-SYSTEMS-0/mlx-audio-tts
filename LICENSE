@@ -1,0 +1,41 @@
+MIT License
+
+Copyright (c) 2025 MLX-Audio TTS Generator
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+THIRD-PARTY LICENSES
+
+This project uses the following third-party components with their respective licenses:
+
+1. MLX-Audio - Apache License 2.0
+   Copyright (c) Apple Inc. and MLX Team
+   https://github.com/ml-explore
+
+2. Kokoro-82M TTS Model - Apache License 2.0
+   Copyright (c) HexGrad
+   https://github.com/hexgrad/Kokoro
+   https://huggingface.co/hexgrad/Kokoro-82M
+
+The Apache License 2.0 requires preservation of copyright notices and reasonable efforts to provide recipients with a copy of the license. This project complies with those requirements.
+
+For the full text of the Apache License 2.0, see:
+https://www.apache.org/licenses/LICENSE-2.0

@@ -264,6 +264,32 @@
     MIT License - Do Whatever You Want With This Cool Software!
 ```
 
+**⚖️ Third-Party License Attribution**
+
+This project builds upon amazing open-source components with the following licenses:
+
+**MLX-Audio**
+- **License**: Apache License 2.0
+- **Copyright**: Apple Inc. and MLX Team
+- **Repository**: [github.com/ml-explore](https://github.com/ml-explore)
+
+**Kokoro-82M TTS Model**
+- **License**: Apache License 2.0
+- **Copyright**: HexGrad
+- **Repository**: [github.com/hexgrad/Kokoro](https://github.com/hexgrad/Kokoro)
+- **Model**: [huggingface.co/hexgrad/Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M)
+
+**Apache License 2.0 Summary**
+✅ Commercial use permitted
+✅ Modification allowed
+✅ Distribution allowed
+✅ Private use allowed
+📝 Must preserve original copyright notices
+📝 Must include license copy with distributions
+
+**This Project License**:
+The MLX-Audio TTS Generator codebase is licensed under the MIT License, while respecting the Apache 2.0 requirements of its dependencies.
+
 ---
 
 ### 👾 **Contributing**
