@@ -21,6 +21,7 @@ class Audio:
     def __init__(self, client):
         self.client = client
         self.speech = Speech(client)
+        self.recording = Recording(client)
 
 
 class Speech:
@@ -69,6 +70,195 @@ class Speech:
             ref_text=ref_text,
             stream=stream
         )
+
+
+class Recording:
+    """Audio recording API for voice cloning."""
+
+    def __init__(self, client):
+        self.client = client
+
+    def list_devices(self) -> Dict[str, Any]:
+        """
+        List available audio input devices.
+
+        Returns:
+            Dictionary with device information
+        """
+        response = self.client._make_request("GET", "/api/recording/devices")
+        return response.json()
+
+    def start(
+        self,
+        device_id: Optional[str] = None,
+        sample_rate: int = 22050,
+        channels: int = 1,
+        format: str = "int16"
+    ) -> Dict[str, Any]:
+        """
+        Start a recording session.
+
+        Args:
+            device_id: Audio device ID (None for default)
+            sample_rate: Sample rate in Hz
+            channels: Number of channels
+            format: Audio format
+
+        Returns:
+            Recording session information
+        """
+        data = {
+            "device_id": device_id,
+            "sample_rate": sample_rate,
+            "channels": channels,
+            "format": format
+        }
+        response = self.client._make_request("POST", "/api/recording/start", data=data)
+        return response.json()
+
+    def stop(
+        self,
+        recording_id: str,
+        process_audio: bool = True,
+        normalize: bool = True,
+        trim_silence: bool = True,
+        noise_reduce: bool = False
+    ) -> Dict[str, Any]:
+        """
+        Stop recording and save audio.
+
+        Args:
+            recording_id: Recording session ID
+            process_audio: Process audio for better cloning
+            normalize: Normalize audio amplitude
+            trim_silence: Trim silence from audio
+            noise_reduce: Apply noise reduction
+
+        Returns:
+            Recording result information
+        """
+        data = {
+            "recording_id": recording_id,
+            "process_audio": process_audio,
+            "normalize": normalize,
+            "trim_silence": trim_silence,
+            "noise_reduce": noise_reduce
+        }
+        response = self.client._make_request("POST", "/api/recording/stop", data=data)
+        return response.json()
+
+    def get_status(self) -> Dict[str, Any]:
+        """
+        Get current recording status.
+
+        Returns:
+            Recording status information
+        """
+        response = self.client._make_request("GET", "/api/recording/status")
+        return response.json()
+
+    def record_and_clone(
+        self,
+        text: str,
+        device_id: Optional[str] = None,
+        sample_rate: int = 22050,
+        channels: int = 1,
+        speed: float = 1.0,
+        temperature: float = 0.7,
+        audio_format: str = "wav",
+        ref_text: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        One-stop method to record voice and clone it for TTS.
+
+        Args:
+            text: Text to speak with cloned voice
+            device_id: Audio device ID
+            sample_rate: Recording sample rate
+            channels: Number of channels
+            speed: Speech speed
+            temperature: Generation temperature
+            audio_format: Output audio format
+            ref_text: Reference text for recorded audio
+
+        Returns:
+            Dictionary with cloned voice TTS result
+        """
+        # Start recording
+        start_response = self.start(
+            device_id=device_id,
+            sample_rate=sample_rate,
+            channels=channels
+        )
+
+        recording_id = start_response.get('recording_id')
+        if not recording_id:
+            raise RuntimeError("Failed to start recording")
+
+        logger.info(f"Recording started with ID: {recording_id}")
+        logger.info("Please speak into the microphone...")
+
+        # For programmatic use, we should implement a way to wait for user input
+        # For now, return the recording ID so the caller can handle timing
+        return {
+            "recording_id": recording_id,
+            "message": "Recording started. Call stop_and_clone() when done.",
+            "stop_and_clone": lambda: self.stop_and_clone(
+                recording_id=recording_id,
+                text=text,
+                speed=speed,
+                temperature=temperature,
+                audio_format=audio_format,
+                ref_text=ref_text
+            )
+        }
+
+    def stop_and_clone(
+        self,
+        recording_id: str,
+        text: str,
+        speed: float = 1.0,
+        temperature: float = 0.7,
+        audio_format: str = "wav",
+        ref_text: Optional[str] = None
+    ) -> bytes:
+        """
+        Stop recording and generate TTS with cloned voice.
+
+        Args:
+            recording_id: Active recording session ID
+            text: Text to speak
+            speed: Speech speed
+            temperature: Generation temperature
+            audio_format: Output audio format
+            ref_text: Reference text
+
+        Returns:
+            Generated TTS audio bytes
+        """
+        data = {
+            "recording_id": recording_id,
+            "text": text,
+            "speed": speed,
+            "temperature": temperature,
+            "audio_format": audio_format
+        }
+        if ref_text:
+            data["ref_text"] = ref_text
+
+        response = self.client._make_request("POST", "/api/recording/stop-and-clone", data=data)
+        result = response.json()
+
+        if result.get('status') == 'success' and result.get('audio_url'):
+            # Download the generated audio
+            audio_response = self.client.session.get(
+                f"{self.client.base_url}{result['audio_url']}",
+                timeout=self.client.timeout
+            )
+            audio_response.raise_for_status()
+            return audio_response.content
+        else:
+            raise RuntimeError(f"Failed to generate cloned voice: {result}")
 
 
 class TTSClient:

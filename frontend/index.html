@@ -146,12 +146,73 @@
 
                         <!-- Voice Cloning Section -->
                         <div class="form-group hidden" id="clone-voice-group">
-                            <label for="ref-audio-upload" class="form-label">
+                            <label class="form-label">
                                 <span class="label-text">Reference</span>
-                                <span class="label-accent">Audio</span>
+                                <span class="label-accent">Audio Source</span>
                             </label>
-                            <div class="file-upload-wrapper">
-                                <div class="file-upload-area" id="file-upload-area">
+
+                            <!-- Recording Option -->
+                            <div class="audio-source-tabs">
+                                <button class="source-tab active" data-source="record">
+                                    <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4z"/>
+                                        <path d="M5.5 9.643a.75.75 0 00-1.5 0V10c0 3.06 2.29 5.585 5.25 5.954V17.5h-1.5a.75.75 0 000 1.5h4.5a.75.75 0 000-1.5h-1.5v-1.546A6.001 6.001 0 0016 10v-.357a.75.75 0 00-1.5 0V10a4.5 4.5 0 01-9 0v-.357z"/>
+                                    </svg>
+                                    Record Voice
+                                </button>
+                                <button class="source-tab" data-source="upload">
+                                    <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM2 7a2 2 0 012-2h12a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V7z"/>
+                                    </svg>
+                                    Upload File
+                                </button>
+                            </div>
+
+                            <!-- Recording Interface -->
+                            <div class="recording-interface" id="recording-interface">
+                                <div class="recording-controls">
+                                    <button id="record-btn" class="record-btn">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                                            <circle cx="12" cy="12" r="8"/>
+                                        </svg>
+                                        <span>Start Recording</span>
+                                    </button>
+                                    <div class="recording-status hidden" id="recording-status">
+                                        <div class="status-indicator"></div>
+                                        <span class="status-text">Recording...</span>
+                                        <span class="recording-time" id="recording-time">00:00</span>
+                                    </div>
+                                </div>
+
+                                <!-- Audio Visualization -->
+                                <div class="audio-visualizer hidden" id="audio-visualizer">
+                                    <canvas id="visualizer-canvas" width="400" height="100"></canvas>
+                                </div>
+
+                                <!-- Device Selection -->
+                                <div class="device-selection">
+                                    <label for="device-select" class="device-label">Microphone:</label>
+                                    <select id="device-select" class="device-select">
+                                        <option value="">Default Microphone</option>
+                                    </select>
+                                </div>
+
+                                <!-- Recording Instructions -->
+                                <div class="recording-instructions">
+                                    <h4>Recording Tips:</h4>
+                                    <ul>
+                                        <li>Speak clearly and naturally</li>
+                                        <li>Record for 10-30 seconds</li>
+                                        <li>Find a quiet environment</li>
+                                        <li>Stay consistent distance from microphone</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <!-- Upload Interface -->
+                            <div class="upload-interface hidden" id="upload-interface">
+                                <div class="file-upload-wrapper">
+                                    <div class="file-upload-area" id="file-upload-area">
                                     <div class="upload-icon">
                                         <svg width="48" height="48" viewBox="0 0 48 48" fill="currentColor">
                                             <path d="M24 4v20M14 14l10 10 10-10" stroke="currentColor" stroke-width="2" fill="none"/>
