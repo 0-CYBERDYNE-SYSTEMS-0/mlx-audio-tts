@@ -7,10 +7,14 @@ import os
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 UPLOADS_DIR = os.path.join(BASE_DIR, 'uploads')
 OUTPUTS_DIR = os.path.join(BASE_DIR, 'outputs')
+LOGS_DIR = os.path.join(BASE_DIR, 'logs')
+PID_DIR = os.path.join(BASE_DIR, 'pids')
 
 # Ensure directories exist
 os.makedirs(UPLOADS_DIR, exist_ok=True)
 os.makedirs(OUTPUTS_DIR, exist_ok=True)
+os.makedirs(LOGS_DIR, exist_ok=True)
+os.makedirs(PID_DIR, exist_ok=True)
 
 # TTS Configuration
 DEFAULT_MODEL = "mlx-community/Kokoro-82M-bf16"
@@ -49,3 +53,15 @@ OUTPUT_CLEANUP_HOURS = 1
 HOST = "0.0.0.0"
 PORT = 8000
 RELOAD = True
+
+# Production Configuration
+PRODUCTION_MODE = os.getenv("TTS_PRODUCTION", "false").lower() == "true"
+LOG_LEVEL = os.getenv("TTS_LOG_LEVEL", "INFO")
+SERVER_HOST = os.getenv("TTS_HOST", "127.0.0.1")  # Localhost only for production
+SERVER_PORT = int(os.getenv("TTS_PORT", "8000"))
+
+# Service Management
+PID_FILE = os.path.join(PID_DIR, "tts_service.pid")
+LOG_FILE = os.path.join(LOGS_DIR, "tts_service.log")
+MAX_RETRIES = 3
+RETRY_DELAY = 1  # seconds
