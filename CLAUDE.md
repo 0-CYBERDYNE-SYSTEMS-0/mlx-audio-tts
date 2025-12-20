@@ -15,6 +15,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # Manual startup with UV
 uv run uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
 
+# Production mode (background service)
+python backend/main.py --production
+
 # Manual startup (if needed)
 /Users/scrimwiggins/miniconda3/bin/python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
 ```
@@ -30,6 +33,18 @@ uv sync
 # Add MLX-Audio (requires special handling)
 uv add mlx-audio  # May fail due to miniconda3 requirements
 # Fallback: Use miniconda3 for MLX-Audio specifically
+```
+
+### Code Quality
+```bash
+# Lint code
+uv run ruff check backend/
+
+# Format code
+uv run ruff format backend/
+
+# Run tests (when implemented)
+uv run pytest
 ```
 
 ### API Testing
@@ -49,6 +64,15 @@ curl -X POST http://localhost:8000/api/generate \
 curl -X POST http://localhost:8000/api/generate \
   -H "Content-Type: application/json" \
   -d '{"text":"Hello","mode":"preset","voice":"af_heart","speed":1.2,"temperature":0.8}'
+
+# Upload audio for voice cloning
+curl -X POST http://localhost:8000/api/upload \
+  -F "file=@reference_audio.wav"
+
+# Generate with cloned voice
+curl -X POST http://localhost:8000/api/generate \
+  -H "Content-Type: application/json" \
+  -d '{"text":"Hello world","mode":"clone","voice_id":"UPLOAD_ID"}'
 ```
 
 ## Architecture Overview
@@ -57,44 +81,68 @@ curl -X POST http://localhost:8000/api/generate \
 
 ### Backend Architecture
 - **FastAPI application** with auto-reload for development
-- **Service layer pattern**: `TTSService` handles MLX-Audio integration, `FileService` manages file operations
-- **Background cleanup**: APScheduler automatically removes temporary files every hour
+- **Service layer pattern**:
+  - `TTSService`: Handles MLX-Audio integration, text segmentation, and audio generation
+  - `FileService`: Manages file operations, cleanup, and validation
+  - `VoiceRecorder`: Handles audio recording functionality
+  - `RecordingManager`: Manages recording state and operations
+- **Background cleanup**: APScheduler automatically removes temporary files
 - **Lifespan management**: Proper startup/shutdown handling for MLX-Audio model
+- **Production mode**: Can run as background service with logging and PID management
 
 ### Frontend Architecture
 - **Vanilla JavaScript/HTML5/CSS3** - No build process required
-- **Modular structure**: `api.js` (HTTP client), `app.js` (main logic), `ui.js` (DOM helpers)
-- **File upload handling** with audio format validation
-- **Real-time UI updates** during TTS generation
+- **Modular structure**:
+  - `api.js`: HTTP client for backend communication
+  - `app.js`: Main application logic and state management
+  - `ui.js`: DOM manipulation helpers
+  - `audio-player.js`: Enhanced audio player with waveform visualization
+  - `audio-recorder.js`: Audio recording functionality
+  - `voice-recorder-ui.js`: Voice recording interface components
+- **Real-time features**: Progress tracking, audio visualization, drag-and-drop uploads
 
 ### Key Technical Constraints
 
-1. **Python Environment**: Must use `/Users/scrimwiggins/miniconda3/bin/python` - MLX-Audio requires specific miniconda3 setup
-2. **Apple Silicon Only**: MLX-Audio optimized for macOS on Apple Silicon
+1. **Python Environment**: MLX-Audio requires `/Users/scrimwiggins/miniconda3/bin/python` due to specific dependencies
+2. **Apple Silicon Only**: MLX-Audio optimized for macOS on Apple Silicon with Metal acceleration
 3. **Audio Processing**:
-   - Input formats: WAV, MP3, FLAC, M4A, OGG
+   - Input formats: WAV, MP3, FLAC, M4A, OGG, WebM
    - Output formats: WAV, MP3, FLAC
    - Reference audio for voice cloning: 10-30 seconds recommended
-4. **Model Behavior**: Kokoro-82M auto-downloads on first use, may generate gibberish for very short text
+   - Max file size: 10MB
+4. **Model Behavior**:
+   - Kokoro-82M auto-downloads on first use
+   - May generate gibberish for very short text (< 10 characters)
+   - Text automatically segmented at 300 characters for optimal generation
 
 ### File Organization
 
-- **Backend**: `backend/` with FastAPI app, services, API routes, and utilities
+- **Backend**: `backend/`
+  - `main.py`: FastAPI application entry point
+  - `config.py`: Centralized configuration and constants
+  - `api/`: API routes and models
+  - `services/`: Business logic (TTS, file management, recording)
 - **Frontend**: `frontend/` serving static files from root path
 - **Temporary Storage**: `uploads/` (reference audio), `outputs/` (generated TTS)
-- **Configuration**: Centralized in `backend/config.py` with voice presets and parameter limits
+- **Service Management**: `logs/` and `pids/` for production mode
 
 ### API Patterns
 
 - **RESTful endpoints** following `/api/` convention
-- **File uploads** via multipart form data to `/api/upload`
-- **Voice modes**: `preset` (built-in voices) or `clone` (custom voice from uploaded audio)
+- **Voice modes**:
+  - `preset`: Built-in Kokoro-82M voices
+  - `clone`: Custom voice from uploaded audio
+- **Intelligent text processing**: Automatic segmentation for long texts
+- **File handling**: Multipart uploads with format validation
 - **Consistent error responses** with proper HTTP status codes
 
 ### Development Notes
 
-- **Auto-reload enabled** - changes to backend files trigger automatic restart
-- **Frontend changes** require browser refresh
-- **No formal test suite** - manual testing via curl commands and browser interface
-- **Static assets** served at `/assets/` path
-- **CORS configured** to allow frontend-backend communication
+- **Auto-reload enabled** for backend changes
+- **Service scripts**: `install_tts_service.sh`, `start_tts_service.sh`, `stop_tts_service.sh` for production deployment
+- **Configuration via environment variables**:
+  - `TTS_PRODUCTION`: Enable production mode
+  - `TTS_HOST`, `TTS_PORT`: Server binding
+  - `TTS_LOG_LEVEL`: Logging verbosity
+- **Static assets** served at `/assets/`, `/css/`, `/js/` paths
+- **CORS configured** appropriately for development vs production

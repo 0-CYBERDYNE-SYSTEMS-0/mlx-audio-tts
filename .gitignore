@@ -127,3 +127,6 @@ yarn-error.log*
 # Configuration overrides
 config_local.py
 settings_local.py
+
+# Stakpak session files
+.stakpak/session*
