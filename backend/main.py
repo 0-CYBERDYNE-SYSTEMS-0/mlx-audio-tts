@@ -137,12 +137,11 @@ else:
         allow_headers=["*"],
     )
 
-# Mount static files (frontend) - only in development
-if not PRODUCTION_MODE:
-    frontend_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'frontend')
-    app.mount("/assets", StaticFiles(directory=os.path.join(frontend_dir, 'assets')), name="assets")
-    app.mount("/css", StaticFiles(directory=os.path.join(frontend_dir, 'css')), name="css")
-    app.mount("/js", StaticFiles(directory=os.path.join(frontend_dir, 'js')), name="js")
+# Mount static files (frontend) - available in both dev and production
+frontend_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'frontend')
+app.mount("/assets", StaticFiles(directory=os.path.join(frontend_dir, 'assets')), name="assets")
+app.mount("/css", StaticFiles(directory=os.path.join(frontend_dir, 'css')), name="css")
+app.mount("/js", StaticFiles(directory=os.path.join(frontend_dir, 'js')), name="js")
 
 # Setup API routes
 setup_routes(app)
@@ -151,11 +150,8 @@ setup_routes(app)
 @app.get("/")
 async def root():
     """Serve the main application."""
-    if PRODUCTION_MODE:
-        return {"message": "MLX-Audio TTS Service", "status": "running"}
-    else:
-        frontend_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'frontend')
-        return FileResponse(os.path.join(frontend_dir, 'index.html'))
+    frontend_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'frontend')
+    return FileResponse(os.path.join(frontend_dir, 'index.html'))
 
 
 @app.get("/health")

@@ -15,7 +15,14 @@ except ImportError:
     if os.path.exists(miniconda_python):
         os.execv(miniconda_python, [miniconda_python] + sys.argv)
 
-from backend.config import DEFAULT_MODEL, MAX_CHARS_PER_GENERATION, MIN_CHARS_PER_SEGMENT, SENTENCE_SPLIT_CHARS, CLAUSE_SPLIT_CHARS
+from backend.config import (
+    DEFAULT_MODEL,
+    CLONE_MODEL,
+    MAX_CHARS_PER_GENERATION,
+    MIN_CHARS_PER_SEGMENT,
+    SENTENCE_SPLIT_CHARS,
+    CLAUSE_SPLIT_CHARS,
+)
 
 
 class TTSService:
@@ -24,7 +31,9 @@ class TTSService:
     def __init__(self):
         """Initialize TTS service and load model."""
         self.model_path = DEFAULT_MODEL
+        self.clone_model_path = CLONE_MODEL
         print(f"Initialized TTS service with model: {self.model_path}")
+        print(f"Initialized cloning model: {self.clone_model_path}")
 
     def split_text_intelligently(self, text: str) -> List[str]:
         """
@@ -330,9 +339,10 @@ class TTSService:
                 # Generate audio using mlx-audio with reference audio
                 generate_audio(
                     text=segment,
-                    model_path=self.model_path,
+                    model_path=self.clone_model_path,
                     ref_audio=ref_audio_path,
                     ref_text=ref_text,
+                    voice=None,
                     speed=speed,
                     temperature=temperature,
                     file_prefix=temp_prefix,

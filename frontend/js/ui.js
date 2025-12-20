@@ -353,8 +353,8 @@ function initializeGlitchEffects() {
  */
 function validateFileUpload(file) {
     // Check file type
-    const allowedTypes = ['audio/wav', 'audio/mp3', 'audio/flac', 'audio/m4a', 'audio/ogg'];
-    const allowedExtensions = ['.wav', '.mp3', '.flac', '.m4a', '.ogg'];
+    const allowedTypes = ['audio/wav', 'audio/mp3', 'audio/flac', 'audio/m4a', 'audio/ogg', 'audio/webm'];
+    const allowedExtensions = ['.wav', '.mp3', '.flac', '.m4a', '.ogg', '.webm'];
 
     const hasValidType = allowedTypes.includes(file.type);
     const hasValidExtension = allowedExtensions.some(ext =>

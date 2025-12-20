@@ -45,6 +45,11 @@ class AudioRecorder {
             this.mediaRecorder.ondataavailable = (event) => {
                 if (event.data.size > 0) {
                     this.audioChunks.push(event.data);
+                    console.debug('MediaRecorder chunk', {
+                        size: event.data.size,
+                        type: event.data.type,
+                        chunks: this.audioChunks.length
+                    });
                 }
             };
 
@@ -94,6 +99,10 @@ class AudioRecorder {
             throw new Error('Already recording');
         }
 
+        console.debug('Starting recording', {
+            mimeType: this.getSupportedMimeType()
+        });
+
         // Start recording on server
         try {
             const response = await fetch('/api/recording/start', {
@@ -114,6 +123,9 @@ class AudioRecorder {
             }
 
             this.recordingSessionId = result.recording_id;
+            console.debug('Recording session started', {
+                sessionId: this.recordingSessionId
+            });
         } catch (error) {
             console.error('Error starting server recording:', error);
             throw error;
@@ -137,6 +149,11 @@ class AudioRecorder {
             throw new Error('Not recording');
         }
 
+        console.debug('Stopping recording', {
+            sessionId: this.recordingSessionId,
+            chunks: this.audioChunks.length
+        });
+
         // Stop local recording
         this.mediaRecorder.stop();
         this.isRecording = false;
@@ -144,6 +161,10 @@ class AudioRecorder {
         // Wait for recording to finish
         await new Promise(resolve => {
             this.mediaRecorder.onstop = resolve;
+        });
+
+        console.debug('MediaRecorder stopped', {
+            chunks: this.audioChunks.length
         });
 
         // Stop server recording
@@ -184,7 +205,12 @@ class AudioRecorder {
         }
 
         const mimeType = this.getSupportedMimeType();
-        return new Blob(this.audioChunks, { type: mimeType });
+        const blob = new Blob(this.audioChunks, { type: mimeType });
+        console.debug('Built audio blob', {
+            size: blob.size,
+            type: blob.type
+        });
+        return blob;
     }
 
     /**
@@ -318,4 +344,9 @@ class AudioRecorder {
 // Export for use in other modules
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = AudioRecorder;
+}
+
+// Expose to browser global scope
+if (typeof window !== 'undefined') {
+    window.AudioRecorder = AudioRecorder;
 }

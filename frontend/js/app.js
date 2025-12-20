@@ -57,6 +57,14 @@ function setupEventListeners() {
             }
 
             toggleVoiceModeUI();
+
+            if (card.dataset.mode === 'preset') {
+                const refUpload = document.getElementById('ref-audio-upload');
+                if (refUpload) {
+                    refUpload.dataset.fileId = '';
+                    refUpload.value = '';
+                }
+            }
         });
     });
 
@@ -268,13 +276,14 @@ async function handleFormSubmit(e) {
 function collectFormData() {
     // Get the active mode card instead of radio button
     const activeModeCard = document.querySelector('.mode-card.active');
+    const refUpload = document.getElementById('ref-audio-upload');
+    const refAudioId = refUpload?.dataset.fileId || null;
     const voiceMode = activeModeCard ? activeModeCard.dataset.mode : 'preset';
-
     return {
         text: document.getElementById('text-input').value.trim(),
         mode: voiceMode,
         voice: voiceMode === 'preset' ? document.getElementById('voice-select').value : null,
-        ref_audio_id: voiceMode === 'clone' ? document.getElementById('ref-audio-upload').dataset.fileId : null,
+        ref_audio_id: voiceMode === 'clone' ? refAudioId : null,
         ref_text: document.getElementById('ref-text-input').value.trim() || null,
         speed: parseFloat(document.getElementById('speed-slider').value),
         temperature: parseFloat(document.getElementById('temperature-slider').value),
@@ -286,6 +295,12 @@ function collectFormData() {
  * Validate form inputs
  */
 function validateInputs(data) {
+    console.debug('Validate inputs', {
+        mode: data.mode,
+        ref_audio_id: data.ref_audio_id,
+        fileInputExists: Boolean(document.getElementById('ref-audio-upload')),
+        fileSelected: Boolean(document.getElementById('ref-audio-upload')?.files?.length)
+    });
     if (!data.text) {
         throw new Error('Please enter text to convert');
     }
@@ -296,10 +311,12 @@ function validateInputs(data) {
 
     if (data.mode === 'clone') {
         const file = document.getElementById('ref-audio-upload').files[0];
-        if (!file) {
+        if (!file && !data.ref_audio_id) {
+            console.debug('Clone validation failed: missing file and ref_audio_id');
             throw new Error('Please upload a reference audio file');
         }
-        if (!data.ref_audio_id) {
+        if (file && !data.ref_audio_id) {
+            console.debug('Clone validation failed: file present but ref_audio_id missing');
             throw new Error('Reference audio not uploaded properly');
         }
     }
@@ -311,14 +328,20 @@ function validateInputs(data) {
 async function performGeneration(formData) {
     // If clone mode, upload reference audio first
     if (formData.mode === 'clone') {
-        console.log('Uploading reference audio...');
-        const file = document.getElementById('ref-audio-upload').files[0];
-        const uploadResult = await uploadReferenceAudio(file);
-        formData.ref_audio_id = uploadResult.ref_audio_id;
+        const fileInput = document.getElementById('ref-audio-upload');
+        const file = fileInput.files[0];
 
-        // Store file ID for future reference
-        document.getElementById('ref-audio-upload').dataset.fileId = uploadResult.ref_audio_id;
-        console.log('✅ Reference audio uploaded');
+        if (!formData.ref_audio_id && file) {
+            console.log('Uploading reference audio...');
+            const uploadResult = await uploadReferenceAudio(file);
+            formData.ref_audio_id = uploadResult.ref_audio_id;
+
+            // Store file ID for future reference
+            fileInput.dataset.fileId = uploadResult.ref_audio_id;
+            console.log('✅ Reference audio uploaded');
+        } else if (formData.ref_audio_id) {
+            console.log('✅ Using existing reference audio');
+        }
     }
 
     // Generate audio with progress tracking

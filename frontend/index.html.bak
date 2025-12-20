@@ -255,7 +255,6 @@
                                 <p class="field-help">Leave blank to auto-transcribe the audio</p>
                             </div>
                         </div>
-                        </div>
 
                         <!-- Parameters Section -->
                         <div class="form-group">

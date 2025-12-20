@@ -455,15 +455,9 @@ def setup_routes(app: FastAPI):
 
             resolved_ref_audio_id = ref_audio_id or recording_result.get('ref_audio_id')
             if not resolved_ref_audio_id:
-                return JSONResponse(
-                    status_code=200,
-                    content={
-                        "status": "needs_reference",
-                        "message": "Recording stopped. Upload reference audio via /api/upload-reference and retry with ref_audio_id.",
-                        "recording_id": recording_id,
-                        "recording_duration": recording_result.get('duration'),
-                        "next_step": f"POST /api/recording/stop-and-clone with recording_id={recording_id} and ref_audio_id"
-                    }
+                raise HTTPException(
+                    status_code=400,
+                    detail="Missing reference audio. Upload via /api/upload-reference and pass ref_audio_id."
                 )
 
             # Step 2: Generate TTS with cloned voice

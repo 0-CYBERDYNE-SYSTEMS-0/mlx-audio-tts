@@ -18,6 +18,7 @@ os.makedirs(PID_DIR, exist_ok=True)
 
 # TTS Configuration
 DEFAULT_MODEL = "mlx-community/Kokoro-82M-bf16"
+CLONE_MODEL = os.getenv("TTS_CLONE_MODEL", "sesame/csm-1b")
 AVAILABLE_VOICES = [
     {"id": "af_heart", "name": "Heart (Female, Warm)", "gender": "female", "accent": "american"},
     {"id": "af_bella", "name": "Bella (Female, Clear)", "gender": "female", "accent": "american"},
@@ -45,7 +46,7 @@ CLAUSE_SPLIT_CHARS = ',;:'     # Characters that split clauses
 
 # File Upload Configuration
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
-ALLOWED_EXTENSIONS = {'.wav', '.mp3', '.flac', '.m4a', '.ogg'}
+ALLOWED_EXTENSIONS = {'.wav', '.mp3', '.flac', '.m4a', '.ogg', '.webm'}
 UPLOAD_CLEANUP_HOURS = 24
 OUTPUT_CLEANUP_HOURS = 1
 

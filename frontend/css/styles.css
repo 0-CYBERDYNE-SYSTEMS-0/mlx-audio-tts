@@ -2101,3 +2101,19 @@ body {
         padding: var(--space-md);
     }
 }
+
+/* Recording Error Animation */
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.recording-error {
+    box-shadow: 0 4px 12px rgba(255, 51, 102, 0.3);
+}
