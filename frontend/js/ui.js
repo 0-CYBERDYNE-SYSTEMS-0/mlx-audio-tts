@@ -1,15 +1,15 @@
 /**
- * UI Helper Functions
+ * UI Helper Functions for KREO TTS
  */
 
 /**
  * Toggle voice mode UI based on selection
  */
 function toggleVoiceModeUI() {
-    const presetGroup = document.getElementById('preset-voice-group');
-    const cloneGroup = document.getElementById('clone-voice-group');
-    const activeModeCard = document.querySelector('.mode-card.active');
-    const selectedMode = activeModeCard ? activeModeCard.dataset.mode : 'preset';
+    const presetGroup = document.getElementById('preset-group');
+    const cloneGroup = document.getElementById('clone-group');
+    const activeVoiceOption = document.querySelector('.voice-option.active');
+    const selectedMode = activeVoiceOption ? activeVoiceOption.dataset.mode : 'preset';
 
     if (selectedMode === 'preset') {
         if (presetGroup) presetGroup.classList.remove('hidden');
@@ -37,7 +37,7 @@ function updateCharCount() {
         } else if (currentLength > 4000) {
             charCount.style.color = 'var(--warning)';
         } else {
-            charCount.style.color = 'var(--primary)';
+            charCount.style.color = 'var(--text-tertiary)';
         }
     }
 }
@@ -85,16 +85,11 @@ function updateSliderValue(type) {
  */
 function showLoading() {
     const generateBtn = document.getElementById('generate-btn');
-    const spinner = document.getElementById('loading-spinner');
     const btnText = generateBtn?.querySelector('.btn-text');
 
     if (generateBtn) {
         generateBtn.disabled = true;
         generateBtn.classList.add('loading');
-    }
-
-    if (spinner) {
-        spinner.classList.remove('hidden');
     }
 
     if (btnText) {
@@ -110,7 +105,6 @@ function showLoading() {
  */
 function hideLoading() {
     const generateBtn = document.getElementById('generate-btn');
-    const spinner = document.getElementById('loading-spinner');
     const btnText = generateBtn?.querySelector('.btn-text');
 
     if (generateBtn) {
@@ -118,12 +112,8 @@ function hideLoading() {
         generateBtn.classList.remove('loading');
     }
 
-    if (spinner) {
-        spinner.classList.add('hidden');
-    }
-
     if (btnText) {
-        btnText.textContent = 'Generate Audio';
+        btnText.textContent = 'Generate Speech';
     }
 }
 
@@ -167,33 +157,110 @@ function showResults(result) {
     if (resultsSection) {
         resultsSection.classList.remove('hidden');
 
-        // Set audio player source using the enhanced audio player
-        if (window.audioPlayer && result.audio_url) {
-            const filename = result.filename || 'generated_audio.wav';
-            const format = result.filename ? result.filename.split('.').pop() : 'wav';
-            const duration = result.duration || 0;
-            const estimatedSize = estimateFileSize(duration, format);
+        // Set audio player source
+        const audioPlayer = document.getElementById('audio-player');
+        const playBtn = document.getElementById('play-btn');
+        const downloadBtn = document.getElementById('download-btn');
 
-            window.audioPlayer.setAudioSource(result.audio_url, filename);
-            window.audioPlayer.updateDownloadInfo(format, duration, estimatedSize);
+        if (audioPlayer && result.audio_url) {
+            audioPlayer.src = result.audio_url;
+
+            // Setup play button
+            if (playBtn) {
+                playBtn.onclick = () => {
+                    if (audioPlayer.paused) {
+                        audioPlayer.play();
+                        playBtn.innerHTML = `
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="6" y="4" width="4" height="16"/>
+                                <rect x="14" y="4" width="4" height="16"/>
+                            </svg>
+                        `;
+                    } else {
+                        audioPlayer.pause();
+                        playBtn.innerHTML = `
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polygon points="5,3 19,12 5,21 5,3"/>
+                            </svg>
+                        `;
+                    }
+                };
+
+                // Setup download button
+                if (downloadBtn) {
+                    downloadBtn.onclick = () => {
+                        const link = document.createElement('a');
+                        link.href = result.audio_url;
+                        link.download = result.filename || 'generated_speech.wav';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    };
+                }
+
+                // Update time displays
+                audioPlayer.addEventListener('loadedmetadata', () => {
+                    const totalTime = document.getElementById('total-time');
+                    const duration = audioPlayer.duration;
+
+                    if (totalTime && duration) {
+                        totalTime.textContent = formatDuration(duration);
+                    }
+
+                    // Update audio duration stat
+                    const audioDurationStat = document.getElementById('audio-duration');
+                    if (audioDurationStat) {
+                        audioDurationStat.textContent = formatDuration(duration);
+                    }
+                });
+
+                // Update progress
+                audioPlayer.addEventListener('timeupdate', () => {
+                    const progressFill = document.getElementById('progress-fill');
+                    const currentTimeEl = document.getElementById('current-time');
+                    const progress = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+
+                    if (progressFill) {
+                        progressFill.style.width = `${progress}%`;
+                    }
+
+                    if (currentTimeEl) {
+                        currentTimeEl.textContent = formatDuration(audioPlayer.currentTime);
+                    }
+
+                    // Update waveform
+                    updateWaveform(progress);
+                });
+
+                // Reset play button when audio ends
+                audioPlayer.addEventListener('ended', () => {
+                    playBtn.innerHTML = `
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="5,3 19,12 5,21 5,3"/>
+                        </svg>
+                    `;
+                    updateWaveform(0);
+                });
+            }
         }
 
-        // Update traditional stats as fallback
-        const audioDuration = document.getElementById('audio-duration');
+        // Update stats
         const processingTime = document.getElementById('processing-time');
-        const audioFormat = document.getElementById('audio-format');
-
-        if (audioDuration && result.duration) {
-            audioDuration.textContent = formatDuration(result.duration);
-        }
-
         if (processingTime && result.processing_time) {
             processingTime.textContent = `${result.processing_time}s`;
         }
 
+        const audioFormat = document.getElementById('audio-format');
         if (audioFormat && result.filename) {
             const extension = result.filename.split('.').pop().toUpperCase();
             audioFormat.textContent = extension;
+        }
+
+        // Estimate file size
+        const audioSize = document.getElementById('audio-size');
+        if (audioSize && result.duration) {
+            const format = result.filename ? result.filename.split('.').pop() : 'wav';
+            audioSize.textContent = estimateFileSize(result.duration, format);
         }
 
         // Scroll to results
@@ -201,7 +268,7 @@ function showResults(result) {
             resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 100);
 
-        // Show success notification
+        // Show success notification for multi-segment audio
         if (result.segments_generated > 1) {
             showNotification(`Successfully merged ${result.segments_generated} audio segments!`, 'success');
         }
@@ -230,6 +297,24 @@ function formatDuration(seconds) {
     } else {
         return `${remainingSeconds}s`;
     }
+}
+
+/**
+ * Update waveform visualization
+ */
+function updateWaveform(progress) {
+    const waveBars = document.querySelectorAll('.wave-bar');
+    if (!waveBars.length) return;
+
+    const barsToHighlight = Math.floor((progress / 100) * waveBars.length);
+
+    waveBars.forEach((bar, index) => {
+        if (index < barsToHighlight) {
+            bar.classList.add('played');
+        } else {
+            bar.classList.remove('played');
+        }
+    });
 }
 
 /**
@@ -269,83 +354,6 @@ function formatVoiceName(voice) {
     return voice
         .replace(/_/g, ' ')
         .replace(/\b\w/g, l => l.toUpperCase());
-}
-
-/**
- * Setup waveform animation
- */
-function setupWaveformAnimation(audioPlayer) {
-    if (!audioPlayer) return;
-
-    const waveBars = document.querySelectorAll('.wave-bar');
-    if (waveBars.length === 0) return;
-
-    // Pause all animations
-    waveBars.forEach(bar => {
-        bar.style.animationPlayState = 'paused';
-    });
-
-    // Play/pause animations based on audio state
-    audioPlayer.addEventListener('play', () => {
-        waveBars.forEach((bar, index) => {
-            bar.style.animationPlayState = 'running';
-            // Randomize animation delay for more realistic effect
-            bar.style.animationDelay = `${Math.random() * 0.5}s`;
-        });
-    });
-
-    audioPlayer.addEventListener('pause', () => {
-        waveBars.forEach(bar => {
-            bar.style.animationPlayState = 'paused';
-        });
-    });
-
-    audioPlayer.addEventListener('ended', () => {
-        waveBars.forEach(bar => {
-            bar.style.animationPlayState = 'paused';
-        });
-    });
-}
-
-/**
- * Initialize typewriter effect for subtitle
- */
-function initializeTypewriter() {
-    const subtitle = document.querySelector('.typewriter');
-    const text = subtitle?.textContent;
-
-    if (subtitle && text) {
-        subtitle.textContent = '';
-        let index = 0;
-
-        function typeChar() {
-            if (index < text.length) {
-                subtitle.textContent += text[index];
-                index++;
-                setTimeout(typeChar, 100);
-            }
-        }
-
-        // Start typing after a short delay
-        setTimeout(typeChar, 1000);
-    }
-}
-
-/**
- * Add glitch effect to elements on hover
- */
-function initializeGlitchEffects() {
-    const glitchElements = document.querySelectorAll('.glitch-text');
-
-    glitchElements.forEach(element => {
-        element.addEventListener('mouseenter', () => {
-            element.classList.add('glitch-active');
-        });
-
-        element.addEventListener('mouseleave', () => {
-            element.classList.remove('glitch-active');
-        });
-    });
 }
 
 /**
@@ -396,47 +404,64 @@ function estimateFileSize(duration, format) {
 }
 
 /**
- * Show notification (fallback if audio player not available)
+ * Show notification
  */
 function showNotification(message, type = 'info') {
-    if (window.audioPlayer) {
-        window.audioPlayer.showNotification(message, type);
-    } else {
-        // Simple fallback notification
-        const notification = document.createElement('div');
-        notification.className = `notification notification-${type}`;
-        notification.textContent = message;
-        notification.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 12px 20px;
-            border-radius: 8px;
-            background: ${type === 'success' ? 'var(--success)' : type === 'error' ? 'var(--error)' : 'var(--primary)'};
-            color: white;
-            font-family: var(--font-body);
-            z-index: 1000;
-            animation: slide-in-right 0.3s ease-out;
-        `;
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.textContent = message;
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 12px 20px;
+        border-radius: 8px;
+        background: ${type === 'success' ? 'var(--success)' : type === 'error' ? 'var(--error)' : 'var(--primary)'};
+        color: white;
+        font-family: var(--font-system);
+        z-index: 1000;
+        animation: slide-in-right 0.3s ease-out;
+        box-shadow: var(--shadow-lg);
+    `;
 
-        document.body.appendChild(notification);
+    document.body.appendChild(notification);
 
+    setTimeout(() => {
+        notification.style.animation = 'slide-out-right 0.3s ease-out';
         setTimeout(() => {
-            notification.style.animation = 'slide-out-right 0.3s ease-out';
-            setTimeout(() => {
-                if (document.body.contains(notification)) {
-                    document.body.removeChild(notification);
-                }
-            }, 300);
-        }, 3000);
-    }
+            if (document.body.contains(notification)) {
+                document.body.removeChild(notification);
+            }
+        }, 300);
+    }, 3000);
 }
 
-// Initialize UI enhancements when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-    initializeTypewriter();
-    initializeGlitchEffects();
-});
+// Add slide animations to document
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slide-in-right {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    @keyframes slide-out-right {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+    }
+`;
+document.head.appendChild(style);
 
 // Export functions for testing
 if (typeof module !== 'undefined' && module.exports) {
@@ -453,6 +478,9 @@ if (typeof module !== 'undefined' && module.exports) {
         formatDuration,
         populateVoices,
         formatVoiceName,
-        validateFileUpload
+        validateFileUpload,
+        estimateFileSize,
+        showNotification,
+        updateWaveform
     };
 }

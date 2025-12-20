@@ -1,16 +1,19 @@
 /**
- * Main application logic for MLX-Audio TTS Generator
+ * Main application logic for KREO TTS Generator
  */
 
 // Initialize app when DOM is loaded
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('🎤 MLX-Audio TTS Generator Initializing...');
+    console.log('🎤 KREO TTS Generator Initializing...');
 
     // Initialize application
     await initApp();
 
     // Setup event listeners
     setupEventListeners();
+
+    // Initialize waveform bars
+    initializeWaveform();
 
     console.log('✅ Application ready');
 });
@@ -42,27 +45,21 @@ async function initApp() {
  */
 function setupEventListeners() {
     // Voice mode cards
-    const modeCards = document.querySelectorAll('.mode-card');
-    modeCards.forEach(card => {
-        card.addEventListener('click', () => {
-            // Remove active class from all cards
-            modeCards.forEach(c => c.classList.remove('active'));
-            // Add active class to clicked card
-            card.classList.add('active');
-
-            // Update hidden radio button
-            const radio = card.querySelector('input[type="radio"]');
-            if (radio) {
-                radio.checked = true;
-            }
+    const voiceOptions = document.querySelectorAll('.voice-option');
+    voiceOptions.forEach(option => {
+        option.addEventListener('click', () => {
+            // Remove active class from all options
+            voiceOptions.forEach(opt => opt.classList.remove('active'));
+            // Add active class to clicked option
+            option.classList.add('active');
 
             toggleVoiceModeUI();
 
-            if (card.dataset.mode === 'preset') {
-                const refUpload = document.getElementById('ref-audio-upload');
-                if (refUpload) {
-                    refUpload.dataset.fileId = '';
-                    refUpload.value = '';
+            if (option.dataset.mode === 'preset') {
+                const audioUpload = document.getElementById('audio-upload');
+                if (audioUpload) {
+                    audioUpload.dataset.fileId = '';
+                    audioUpload.value = '';
                 }
             }
         });
@@ -107,6 +104,30 @@ function setupEventListeners() {
         });
     });
 
+    // Source tabs for voice cloning
+    const sourceTabs = document.querySelectorAll('.source-tab');
+    sourceTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const source = tab.dataset.source;
+
+            // Update active tab
+            sourceTabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+
+            // Show/hide interfaces
+            const recordingInterface = document.getElementById('recording-interface');
+            const uploadInterface = document.getElementById('upload-interface');
+
+            if (source === 'record') {
+                recordingInterface?.classList.remove('hidden');
+                uploadInterface?.classList.add('hidden');
+            } else {
+                recordingInterface?.classList.add('hidden');
+                uploadInterface?.classList.remove('hidden');
+            }
+        });
+    });
+
     // Form submission
     const form = document.getElementById('tts-form');
     if (form) {
@@ -114,9 +135,9 @@ function setupEventListeners() {
     }
 
     // File upload
-    const refAudioUpload = document.getElementById('ref-audio-upload');
-    if (refAudioUpload) {
-        refAudioUpload.addEventListener('change', handleFileUpload);
+    const audioUpload = document.getElementById('audio-upload');
+    if (audioUpload) {
+        audioUpload.addEventListener('change', handleFileUpload);
     }
 
     // File remove button
@@ -126,9 +147,9 @@ function setupEventListeners() {
     }
 
     // Drag and drop
-    const fileUploadArea = document.getElementById('file-upload-area');
-    if (fileUploadArea) {
-        setupDragAndDrop(fileUploadArea);
+    const uploadArea = document.getElementById('upload-area');
+    if (uploadArea) {
+        setupDragAndDrop(uploadArea);
     }
 }
 
@@ -164,7 +185,7 @@ function handleDrop(e) {
     const dt = e.dataTransfer;
     const files = dt.files;
 
-    const fileInput = document.getElementById('ref-audio-upload');
+    const fileInput = document.getElementById('audio-upload');
     if (fileInput && files.length > 0) {
         fileInput.files = files;
         handleFileUpload({ target: fileInput });
@@ -193,13 +214,13 @@ function handleFileUpload(e) {
  * Display uploaded file info
  */
 function displayUploadedFile(file) {
-    const fileUploadArea = document.getElementById('file-upload-area');
+    const uploadArea = document.getElementById('upload-area');
     const fileInfo = document.getElementById('file-info');
     const fileName = document.getElementById('file-name');
     const fileSize = document.getElementById('file-size');
 
-    if (fileUploadArea && fileInfo && fileName && fileSize) {
-        fileUploadArea.classList.add('hidden');
+    if (uploadArea && fileInfo && fileName && fileSize) {
+        uploadArea.classList.add('hidden');
         fileInfo.classList.remove('hidden');
 
         fileName.textContent = file.name;
@@ -211,12 +232,12 @@ function displayUploadedFile(file) {
  * Remove uploaded file
  */
 function removeUploadedFile() {
-    const fileUploadArea = document.getElementById('file-upload-area');
+    const uploadArea = document.getElementById('upload-area');
     const fileInfo = document.getElementById('file-info');
-    const fileInput = document.getElementById('ref-audio-upload');
+    const fileInput = document.getElementById('audio-upload');
 
-    if (fileUploadArea && fileInfo && fileInput) {
-        fileUploadArea.classList.remove('hidden');
+    if (uploadArea && fileInfo && fileInput) {
+        uploadArea.classList.remove('hidden');
         fileInfo.classList.add('hidden');
         fileInput.value = '';
         fileInput.dataset.fileId = '';
@@ -274,17 +295,18 @@ async function handleFormSubmit(e) {
  * Collect form data
  */
 function collectFormData() {
-    // Get the active mode card instead of radio button
-    const activeModeCard = document.querySelector('.mode-card.active');
-    const refUpload = document.getElementById('ref-audio-upload');
-    const refAudioId = refUpload?.dataset.fileId || null;
-    const voiceMode = activeModeCard ? activeModeCard.dataset.mode : 'preset';
+    // Get the active voice option
+    const activeVoiceOption = document.querySelector('.voice-option.active');
+    const audioUpload = document.getElementById('audio-upload');
+    const audioId = audioUpload?.dataset.fileId || null;
+    const voiceMode = activeVoiceOption ? activeVoiceOption.dataset.mode : 'preset';
+
     return {
         text: document.getElementById('text-input').value.trim(),
         mode: voiceMode,
         voice: voiceMode === 'preset' ? document.getElementById('voice-select').value : null,
-        ref_audio_id: voiceMode === 'clone' ? refAudioId : null,
-        ref_text: document.getElementById('ref-text-input').value.trim() || null,
+        ref_audio_id: voiceMode === 'clone' ? audioId : null,
+        ref_text: document.getElementById('ref-text').value.trim() || null,
         speed: parseFloat(document.getElementById('speed-slider').value),
         temperature: parseFloat(document.getElementById('temperature-slider').value),
         audio_format: document.getElementById('format-select').value
@@ -298,9 +320,10 @@ function validateInputs(data) {
     console.debug('Validate inputs', {
         mode: data.mode,
         ref_audio_id: data.ref_audio_id,
-        fileInputExists: Boolean(document.getElementById('ref-audio-upload')),
-        fileSelected: Boolean(document.getElementById('ref-audio-upload')?.files?.length)
+        fileInputExists: Boolean(document.getElementById('audio-upload')),
+        fileSelected: Boolean(document.getElementById('audio-upload')?.files?.length)
     });
+
     if (!data.text) {
         throw new Error('Please enter text to convert');
     }
@@ -310,7 +333,7 @@ function validateInputs(data) {
     }
 
     if (data.mode === 'clone') {
-        const file = document.getElementById('ref-audio-upload').files[0];
+        const file = document.getElementById('audio-upload').files[0];
         if (!file && !data.ref_audio_id) {
             console.debug('Clone validation failed: missing file and ref_audio_id');
             throw new Error('Please upload a reference audio file');
@@ -328,7 +351,7 @@ function validateInputs(data) {
 async function performGeneration(formData) {
     // If clone mode, upload reference audio first
     if (formData.mode === 'clone') {
-        const fileInput = document.getElementById('ref-audio-upload');
+        const fileInput = document.getElementById('audio-upload');
         const file = fileInput.files[0];
 
         if (!formData.ref_audio_id && file) {
@@ -366,12 +389,9 @@ function updateGenerationProgress(progress) {
         if (progress.type === 'segment_info') {
             btnText.textContent = `Processing ${progress.segments} segments...`;
         } else if (progress.type === 'complete') {
-            btnText.textContent = 'Merging audio...';
+            btnText.textContent = 'Finalizing...';
         }
     }
-
-    // You could also update a progress bar or other UI elements here
-    // For now, we'll just update the button text
 }
 
 /**
@@ -388,6 +408,23 @@ function initializeFormatButtons() {
     }
 }
 
+/**
+ * Initialize waveform bars
+ */
+function initializeWaveform() {
+    const waveBars = document.getElementById('wave-bars');
+    if (!waveBars) return;
+
+    // Create 50 wave bars with random heights
+    for (let i = 0; i < 50; i++) {
+        const bar = document.createElement('div');
+        bar.className = 'wave-bar';
+        bar.style.height = `${Math.random() * 80 + 20}%`;
+        bar.style.animationDelay = `${i * 0.02}s`;
+        waveBars.appendChild(bar);
+    }
+}
+
 // Export functions for testing
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
@@ -395,6 +432,7 @@ if (typeof module !== 'undefined' && module.exports) {
         setupEventListeners,
         collectFormData,
         validateInputs,
-        performGeneration
+        performGeneration,
+        initializeWaveform
     };
 }
