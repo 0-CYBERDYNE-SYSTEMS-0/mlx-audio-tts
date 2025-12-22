@@ -15,6 +15,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from apscheduler.schedulers.background import BackgroundScheduler
 
+_early_parser = argparse.ArgumentParser(add_help=False)
+_early_parser.add_argument("--production", action="store_true")
+_early_args, _ = _early_parser.parse_known_args()
+if _early_args.production:
+    # Ensure the environment flag is set before loading PROD-specific constants.
+    os.environ["TTS_PRODUCTION"] = "true"
+
 from backend.config import (
     HOST, PORT, UPLOADS_DIR, OUTPUTS_DIR, OUTPUT_CLEANUP_HOURS,
     UPLOAD_CLEANUP_HOURS, PRODUCTION_MODE, LOG_LEVEL, SERVER_HOST, SERVER_PORT
